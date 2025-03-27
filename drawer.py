@@ -3,7 +3,7 @@ import geopandas as gpd
 import pandas as pd
 import mplcursors
 import numpy as np
-from extraction_xl import extractor
+from extraction_xl import Formator
 from shapely.geometry import Point
 
 # Charger les données géographiques
@@ -11,8 +11,8 @@ gdf_communes = gpd.read_file("Mapalyst\\geojson\\geojson1_corrige.json")  # Comm
 gdf_provinces = gpd.read_file("Mapalyst\\geojson\\Belgique_provinces.json")  # Provinces
 
 # Charger les données Excel
-ext = extractor(r'Mapalyst\\rapport.xlsx', 'Agenten-Agences')
-tableau_compte = ext.prep_tableau_compte('POS ZIP', 'POS Name')  # Crée le dictionnaire avec les comptes
+ext = Formator(r'Mapalyst\\rapport.xlsx', 'Agenten-Agences')
+tableau_compte = ext.get_tableau_compte('POS ZIP', 'POS Name')  # Crée le dictionnaire avec les comptes
 
 # Fonction pour compter les POS pour chaque code postal
 def count_pos_for_commune(postal_codes, tableau_compte):
@@ -29,7 +29,8 @@ def count_pos_for_commune(postal_codes, tableau_compte):
     return total_pos
 
 # Ajouter une colonne 'count_POS' à gdf_communes en mappant chaque code postal
-gdf_communes["count_POS"] = gdf_communes["POSTAL_CODE"].apply(count_pos_for_commune)
+gdf_communes["count_POS"] = gdf_communes["POSTAL_CODE"].apply(lambda x: count_pos_for_commune(x, tableau_compte))
+
 print(f"max? {gdf_communes['count_POS'].max()}")
 
 
@@ -48,7 +49,7 @@ gdf_communes = gdf_communes.dropna(subset=["geometry"])
 gdf_communes = gdf_communes[gdf_communes.is_valid]
 
 # Sauvegarder le tableau des comptes en CSV
-ext.tableau_compte.to_csv('tableau_compte.csv', index=False)
+tableau_compte.to_csv('tableau_compte.csv', index=False)
 
 # Tracer la carte
 fig, ax = plt.subplots(figsize=(10, 10))
