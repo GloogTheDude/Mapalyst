@@ -13,3 +13,11 @@ class MainController:
 
     def add_data_link(self, link):
         self.data_manager.add_link(link)
+
+    def add_team_mate(self, mate):
+        self.user.add_team_mate(mate)
+        self.view.user_window.update_teammates()
+
+    def remove_team_mate(self, mate_id):
+        self.user.remove_team_mate_by_id(mate_id)
+        self.view.user_window.update_teammates()

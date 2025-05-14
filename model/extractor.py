@@ -1,5 +1,4 @@
 import pandas as pd
-import os
 from .file_model import Loaded_File, Sheet
 
 class Extractor:

@@ -1,24 +1,28 @@
-# main.py
-from controller.main_controller import MainController
-from model.user import User
+from model.user import User, USER_FILE_PATH
 from model.data_manager import DataManager
 from view.main_window import MainWindow
+from controller.main_controller import MainController
 
 def main():
-    # Création du modèle utilisateur (en réalité, il devrait être chargé depuis un JSON)
-    user = User(id="1", name="Admin", email="admin@example.com")
+    # Charger l'utilisateur depuis le fichier s'il existe
+    user = User.load_from_file(USER_FILE_PATH)
+    if user is None:
+        user = User(id="1", name="Admin", email="admin@example.com")
 
-    # Création du gestionnaire de données
     data_manager = DataManager()
 
-    # Lancement de la vue principale
-    app = MainWindow(controller=None)  # Création de l'interface
-    controller = MainController(user, data_manager, app)  # Création du contrôleur
+    # Crée la fenêtre principale sans contrôleur (il sera injecté après)
+    app = MainWindow(controller=None)
 
-    # On rattache le contrôleur à la vue maintenant qu’il existe
+    # Crée le contrôleur et connecte-le aux éléments
+    controller = MainController(user, data_manager, app)
+
+    # Injecte le contrôleur dans la vue et initialise les données
     app.controller = controller
+    app.user_window.controller = controller
+    app.user_window.init_data()
 
-    # Boucle principale Tkinter
+    # Lance l'application
     app.mainloop()
 
 if __name__ == "__main__":
