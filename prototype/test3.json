@@ -3,19 +3,19 @@
     "Agenten-Agences": {
       "POS": {
         "selected": true,
-        "type": "COUNT"
+        "type": ""
       },
       "POS Name": {
-        "selected": false,
+        "selected": true,
         "type": ""
       },
       "POS Street": {
-        "selected": false,
+        "selected": true,
         "type": ""
       },
       "POS ZIP": {
         "selected": true,
-        "type": "ZIP"
+        "type": ""
       },
       "POS City": {
         "selected": false,
@@ -58,8 +58,8 @@
         "type": ""
       },
       "Inspecteurs": {
-        "selected": true,
-        "type": "FK"
+        "selected": false,
+        "type": ""
       },
       "Safes": {
         "selected": false,

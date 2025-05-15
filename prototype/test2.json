@@ -3,7 +3,7 @@
     "Agenten-Agences": {
       "POS": {
         "selected": true,
-        "type": "COUNT"
+        "type": ""
       },
       "POS Name": {
         "selected": false,
@@ -15,11 +15,11 @@
       },
       "POS ZIP": {
         "selected": true,
-        "type": "ZIP"
+        "type": ""
       },
       "POS City": {
         "selected": true,
-        "type": "FK"
+        "type": ""
       },
       "POS Province": {
         "selected": false,

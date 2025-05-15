@@ -141,9 +141,11 @@ class FileLoaderWindow(tk.Frame):
                         if not hasattr(self.controller.data_manager, 'sheet_column_metadata'):
                             self.controller.data_manager.sheet_column_metadata = {}
                         if v.get():
-                            self.controller.data_manager.sheet_column_metadata[k] = True
+                            self.controller.data_manager.sheet_column_metadata[k] = {"selected": True}
+                            print(f"[✓] Colonne activée: {k}")
                         else:
                             self.controller.data_manager.sheet_column_metadata.pop(k, None)
+                            print(f"[✗] Colonne désactivée: {k}")
 
                 var.trace_add("write", lambda *args, k=key, v=var: on_toggle(k, v))
 
@@ -158,7 +160,7 @@ class FileLoaderWindow(tk.Frame):
         for key, var in self.column_vars.items():
             path, sheet, column = key
             checked = var.get()
-            config.setdefault(path, {}).setdefault(sheet, {})[column] = {"selected": checked, "type": ""}
+            config.setdefault(path, {}).setdefault(sheet, {})[column] = {"selected": checked}
 
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
