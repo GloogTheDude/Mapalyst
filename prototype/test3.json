@@ -1,0 +1,192 @@
+{
+  "D:/WORKSPACE/Mapalyst/Mapalyst/prototype/rapport.xlsx": {
+    "Agenten-Agences": {
+      "POS": {
+        "selected": true,
+        "type": ""
+      },
+      "POS Name": {
+        "selected": true,
+        "type": ""
+      },
+      "POS Street": {
+        "selected": true,
+        "type": ""
+      },
+      "POS ZIP": {
+        "selected": true,
+        "type": ""
+      },
+      "POS City": {
+        "selected": false,
+        "type": ""
+      },
+      "POS Province": {
+        "selected": false,
+        "type": ""
+      },
+      "POS Phone": {
+        "selected": false,
+        "type": ""
+      },
+      "POS FAX": {
+        "selected": false,
+        "type": ""
+      },
+      "POS Email": {
+        "selected": false,
+        "type": ""
+      },
+      "Sector": {
+        "selected": false,
+        "type": ""
+      },
+      "RM/MS": {
+        "selected": false,
+        "type": ""
+      },
+      "Invest": {
+        "selected": false,
+        "type": ""
+      },
+      "Pme": {
+        "selected": false,
+        "type": ""
+      },
+      "Agri": {
+        "selected": false,
+        "type": ""
+      },
+      "Inspecteurs": {
+        "selected": false,
+        "type": ""
+      },
+      "Safes": {
+        "selected": false,
+        "type": ""
+      },
+      "C & M": {
+        "selected": false,
+        "type": ""
+      },
+      "Contract Holder Name": {
+        "selected": false,
+        "type": ""
+      },
+      "Legal": {
+        "selected": false,
+        "type": ""
+      },
+      "Holder Start dat": {
+        "selected": false,
+        "type": ""
+      },
+      "Holder Street": {
+        "selected": false,
+        "type": ""
+      },
+      "Holder ZIP": {
+        "selected": false,
+        "type": ""
+      },
+      "Holder City": {
+        "selected": false,
+        "type": ""
+      },
+      "Fsma Number": {
+        "selected": false,
+        "type": ""
+      },
+      "Company Idn": {
+        "selected": false,
+        "type": ""
+      },
+      "Exclusive Credit": {
+        "selected": false,
+        "type": ""
+      },
+      "Exclusive Insurance": {
+        "selected": false,
+        "type": ""
+      },
+      "Reputation Risk": {
+        "selected": false,
+        "type": ""
+      },
+      "code referentiekantoor": {
+        "selected": false,
+        "type": ""
+      },
+      "agri business bankers": {
+        "selected": false,
+        "type": ""
+      },
+      "kmoz business bankers": {
+        "selected": false,
+        "type": ""
+      }
+    },
+    "Openingsuren": {
+      "POS": {
+        "selected": false,
+        "type": ""
+      },
+      "POS Name": {
+        "selected": false,
+        "type": ""
+      },
+      "Day of week": {
+        "selected": false,
+        "type": ""
+      },
+      "Time Open AM": {
+        "selected": false,
+        "type": ""
+      },
+      "Time Close AM": {
+        "selected": false,
+        "type": ""
+      },
+      "Time Open PM": {
+        "selected": false,
+        "type": ""
+      },
+      "Time Close PM": {
+        "selected": false,
+        "type": ""
+      },
+      "Time Open Evening": {
+        "selected": false,
+        "type": ""
+      },
+      "Time Close Evening": {
+        "selected": false,
+        "type": ""
+      },
+      "Appointment Open Am": {
+        "selected": false,
+        "type": ""
+      },
+      "Appointment Close Am": {
+        "selected": false,
+        "type": ""
+      },
+      "Appointment Open Pm": {
+        "selected": false,
+        "type": ""
+      },
+      "Appointment Close Pm": {
+        "selected": false,
+        "type": ""
+      },
+      "Appointment Open Evening": {
+        "selected": false,
+        "type": ""
+      },
+      "Appointment Close Evening": {
+        "selected": false,
+        "type": ""
+      }
+    }
+  }
+}

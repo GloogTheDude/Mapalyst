@@ -1,0 +1,138 @@
+import tkinter as tk
+from tkinter import ttk
+from model.extractor import Extractor
+import os
+
+class CollapsibleFrame(ttk.Frame):
+    def __init__(self, master, text="", *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.show = tk.BooleanVar(value=True)
+
+        header = ttk.Frame(self)
+        header.pack(fill="x")
+
+        self.icon_label = ttk.Label(header, text="▼", width=2)
+        self.icon_label.pack(side="left")
+        self.icon_label.bind("<Button-1>", lambda e: self.toggle(force_toggle=True))
+
+        self.toggle_button = ttk.Checkbutton(
+            header, text=text, style="Toolbutton", variable=self.show, command=self.toggle
+        )
+        self.toggle_button.pack(side="left", fill="x", expand=True, pady=2)
+
+        self.sub_frame = ttk.Frame(self)
+        self.sub_frame.pack(fill="both", expand=True)
+
+    def toggle(self, force_toggle=False):
+        if force_toggle:
+            self.show.set(not self.show.get())
+
+        if self.show.get():
+            self.sub_frame.pack(fill="both", expand=True)
+            self.icon_label.configure(text="▼")
+        else:
+            self.sub_frame.forget()
+            self.icon_label.configure(text="▶")
+
+    def get_frame(self):
+        return self.sub_frame
+
+class DataManagerWindow(tk.Frame):
+    def __init__(self, master, controller):
+        super().__init__(master)
+        self.controller = controller
+        self.extractor = Extractor()
+        self.foreign_key_links = {}
+
+        self.main_frame = tk.Frame(self)
+        self.main_frame.pack(fill="both", expand=True)
+
+        refresh_btn = tk.Button(self, text="🔄 Rafraîchir", command=self.refresh_columns)
+        refresh_btn.pack(pady=10)
+
+    def set_controller(self, controller):
+        self.controller = controller
+        self.refresh_columns()
+
+    def refresh_columns(self):
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+
+        if not self.controller or not hasattr(self.controller, 'data_manager'):
+            print("Controller or data_manager missing")
+            return
+
+        metadata = getattr(self.controller.data_manager, "sheet_column_metadata", {})
+        grouped_by_sheet = {}
+        for key, info in metadata.items():
+            if isinstance(info, dict) and info.get("selected"):
+                path, sheet, col = key
+                grouped_by_sheet.setdefault((path, sheet), []).append(col)
+
+        if not grouped_by_sheet:
+            tk.Label(self.main_frame, text="Aucune colonne sélectionnée.", font=("Arial", 12)).pack(pady=10)
+            return
+
+        for (path, sheet), cols in grouped_by_sheet.items():
+            section = CollapsibleFrame(self.main_frame, text=f"{sheet} ({os.path.basename(path)})")
+            section.pack(fill="x", padx=10, pady=5, expand=True)
+            frame = section.get_frame()
+
+            for col in cols:
+                row = tk.Frame(frame)
+                row.pack(fill="x", padx=5, pady=2)
+
+                tk.Label(row, text=col, width=30, anchor="w").grid(row=0, column=0)
+
+                type_var = tk.StringVar()
+                type_menu = ttk.Combobox(row, textvariable=type_var, values=["", "ZIP", "FK", "ROLE", "COUNT", "SUM", "GROUPBY"], state="readonly", width=10)
+                type_menu.grid(row=0, column=1)
+
+                sheet_var = tk.StringVar()
+                column_var = tk.StringVar()
+
+                sheet_menu = ttk.Combobox(row, textvariable=sheet_var, state="disabled", width=30)
+                column_menu = ttk.Combobox(row, textvariable=column_var, state="disabled", width=30)
+
+                sheet_menu.grid(row=0, column=2, padx=5)
+                column_menu.grid(row=0, column=3, padx=5)
+
+                def update_options(*args, sv=sheet_var, cv=column_var, sm=sheet_menu, cm=column_menu):
+                    try:
+                        selected_sheet = eval(sv.get())
+                        options = grouped_by_sheet.get(selected_sheet, [])
+                    except:
+                        options = []
+                    cm["values"] = options
+                    if options:
+                        cv.set(options[0])
+
+                def enable_fk_options(sm=sheet_menu, cm=column_menu):
+                    sm["state"] = "readonly"
+                    cm["state"] = "readonly"
+                    sm["values"] = [str(k) for k in grouped_by_sheet.keys() if k != (path, sheet)]
+                    sheet_var.trace_add("write", update_options)
+
+                def disable_fk_options():
+                    sheet_menu["state"] = "disabled"
+                    column_menu["state"] = "disabled"
+                    sheet_var.set("")
+                    column_var.set("")
+
+                def type_changed(*args):
+                    if type_var.get() == "FK":
+                        enable_fk_options()
+                    else:
+                        disable_fk_options()
+
+                type_var.trace_add("write", type_changed)
+
+                def confirm_link():
+                    if type_var.get() == "FK" and sheet_var.get() and column_var.get():
+                        source = f"{path} | {sheet} | {col}"
+                        target = f"{sheet_var.get()} | {column_var.get()}"
+                        self.foreign_key_links.setdefault(source, []).append(target)
+                        self.foreign_key_links.setdefault(target, []).append(source)
+                        print(f"Lien FK entre {source} et {target}")
+
+                tk.Button(row, text="Lier", command=confirm_link).grid(row=0, column=4, padx=5)
