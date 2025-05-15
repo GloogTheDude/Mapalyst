@@ -5,6 +5,13 @@ from model.user import TeamMate, Role
 
 DEFAULT_ROLE_NAME = "</NA>"
 
+import tkinter as tk
+from tkinter import simpledialog, messagebox, ttk
+import uuid
+from model.user import TeamMate, Role
+
+DEFAULT_ROLE_NAME = "</NA>"
+
 class AddRoleWindow(tk.Toplevel):
     def __init__(self, master, user_window):
         super().__init__(master)
@@ -111,6 +118,13 @@ class AddTeamMateWindow(tk.Toplevel):
 
         role = next((r for r in self.user_window.controller.user.roles if r.name == role_name), Role(DEFAULT_ROLE_NAME))
 
+        # Vérifie les doublons d'ID uniquement si nouveau teammate ou si ID modifié
+        existing_ids = [id_ for mate in self.user_window.controller.user.team_mates
+                        if mate != self.existing_mate for id_ in mate.ids]
+        if any(new_id in existing_ids for new_id in ids):
+            messagebox.showerror("Doublon", "Un ou plusieurs identifiants sont déjà utilisés par un autre teammate.")
+            return
+
         if self.existing_mate:
             self.existing_mate.first_name = first
             self.existing_mate.last_name = last
@@ -122,6 +136,7 @@ class AddTeamMateWindow(tk.Toplevel):
 
         self.user_window.update_teammates()
         self.destroy()
+
 
 class UserWindow(tk.Frame):
     def __init__(self, master, controller):
@@ -160,6 +175,10 @@ class UserWindow(tk.Frame):
             self.controller.user.roles.append(Role(DEFAULT_ROLE_NAME))
         self.update_user_info()
         self.update_teammates()
+        
+    def set_controller(self, controller):
+        self.controller = controller
+
 
     def update_user_info(self):
         user = self.controller.user

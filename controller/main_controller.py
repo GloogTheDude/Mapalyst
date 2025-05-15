@@ -1,23 +1,33 @@
+# controller/main_controller.py
+
+import json
+from pathlib import Path
+from model.user import User
+from model.data_manager import DataManager
+
 class MainController:
-    def __init__(self, user, data_manager, main_window):
-        self.user = user
-        self.data_manager = data_manager
-        self.view = main_window
+    def __init__(self, user=None, data_manager=None, main_window=None):
+        self.user = user or self.load_user()
+        self.data_manager = data_manager or DataManager()
+        self.main_window = main_window
 
-    def load_file(self, path):
-        self.data_manager.add_file(path)
-        self.view.update_file_list(self.data_manager.files)
+    def set_main_window(self, main_window):
+        self.main_window = main_window
 
-    def set_column_flags(self, sheet, column, flags):
-        sheet.set_column_flag(column, flags)
+    def load_user(self, path="user_data.json"):
+        if Path(path).exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return User.from_dict(data)
+            except Exception as e:
+                print(f"Erreur lors du chargement du fichier utilisateur : {e}")
+        # Utilisateur par défaut
+        return User(id="1", name="Admin", email="admin@example.com")
 
-    def add_data_link(self, link):
-        self.data_manager.add_link(link)
-
-    def add_team_mate(self, mate):
-        self.user.add_team_mate(mate)
-        self.view.user_window.update_teammates()
-
-    def remove_team_mate(self, mate_id):
-        self.user.remove_team_mate_by_id(mate_id)
-        self.view.user_window.update_teammates()
+    def save_user(self, path="user_data.json"):
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(self.user.to_dict(), f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde du fichier utilisateur : {e}")

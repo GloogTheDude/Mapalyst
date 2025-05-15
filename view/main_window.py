@@ -17,8 +17,8 @@ class MainWindow(tk.Tk):
         self.user_window = UserWindow(self.notebook, None)  # controller injecté plus tard
         self.notebook.add(self.user_window, text="User")
 
-        self.file_loader = FileLoaderWindow(self.notebook, controller)
-        self.notebook.add(self.file_loader, text="Fichiers")
+        self.file_loader_window = FileLoaderWindow(self.notebook, None)  # controller injecté plus tard
+        self.notebook.add(self.file_loader_window, text="Fichiers")
 
         self.data_manager = DataManagerWindow(self.notebook, controller)
         self.notebook.add(self.data_manager, text="Données")
@@ -26,5 +26,9 @@ class MainWindow(tk.Tk):
         self.map_drawer = MapDrawer(self.notebook, controller)
         self.notebook.add(self.map_drawer, text="Carte")
 
-    def update_file_list(self, files):
-        self.file_loader.update_file_list(files)
+    def set_controller(self, controller):
+        self.controller = controller
+        self.user_window.set_controller(controller)
+        self.file_loader_window.set_controller(controller)
+        self.data_manager.set_controller(controller)
+

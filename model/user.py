@@ -1,25 +1,21 @@
-# === MODELS ===
-
-# model/user.py
 import json
-import os
-
-USER_FILE_PATH = "user_data.json"
+from pathlib import Path
 
 class Role:
-    def __init__(self, name: str):
+    def __init__(self, name):
         self.name = name
 
     def to_dict(self):
         return {"name": self.name}
 
-    @staticmethod
-    def from_dict(data):
-        return Role(name=data["name"])
+    @classmethod
+    def from_dict(cls, data):
+        return cls(name=data.get("name", "</NA>"))
+
 
 class TeamMate:
-    def __init__(self, ids: list, first_name: str, last_name: str, role: Role):
-        self.ids = ids  # List[str]
+    def __init__(self, ids, first_name, last_name, role):
+        self.ids = ids
         self.first_name = first_name
         self.last_name = last_name
         self.role = role
@@ -29,85 +25,71 @@ class TeamMate:
             "ids": self.ids,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "role": self.role.name
+            "role": self.role.to_dict() if self.role else None
         }
 
-    @staticmethod
-    def from_dict(data, roles):
-        role_name = data["role"]
-        role = next((r for r in roles if r.name == role_name), Role(role_name))
-        return TeamMate(
-            ids=data["ids"],
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            role=role
+    @classmethod
+    def from_dict(cls, data):
+        role_data = data.get("role", {})
+        if isinstance(role_data, str):
+            role_obj = Role(role_data)
+        else:
+            role_obj = Role.from_dict(role_data)
+        return cls(
+            ids=data.get("ids", []),
+            first_name=data.get("first_name", ""),
+            last_name=data.get("last_name", ""),
+            role=role_obj
         )
 
+
 class User:
-    def __init__(self, id: str, name: str, email: str):
+    def __init__(self, id, name, email, team_mates=None, roles=None):
         self.id = id
-        self._name = name
-        self._email = email
-        self.team_mates = []  # List[TeamMate]
-        self.roles = []  # List[Role]
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-        self.save_to_file(USER_FILE_PATH)
-
-    @property
-    def email(self):
-        return self._email
-
-    @email.setter
-    def email(self, value):
-        self._email = value
-        self.save_to_file(USER_FILE_PATH)
-
-    def add_team_mate(self, mate: TeamMate):
-        self.team_mates.append(mate)
-        self.save_to_file(USER_FILE_PATH)
-
-    def remove_team_mate_by_id(self, mate_id: str):
-        self.team_mates = [m for m in self.team_mates if mate_id not in m.ids]
-        self.save_to_file(USER_FILE_PATH)
-
-    def add_role(self, role: Role):
-        self.roles.append(role)
-        self.save_to_file(USER_FILE_PATH)
-
-    def force_save(self):
-        self.save_to_file(USER_FILE_PATH)
+        self.name = name
+        self.email = email
+        self.team_mates = team_mates or []
+        self.roles = roles or []
 
     def to_dict(self):
         return {
             "id": self.id,
             "name": self.name,
             "email": self.email,
-            "roles": [r.to_dict() for r in self.roles],
-            "team_mates": [m.to_dict() for m in self.team_mates]
+            "team_mates": [mate.to_dict() for mate in self.team_mates],
+            "roles": [role.to_dict() for role in self.roles],
         }
 
-    @staticmethod
-    def from_dict(data):
-        user = User(id=data["id"], name=data["name"], email=data["email"])
-        user.roles = [Role.from_dict(r) for r in data.get("roles", [])]
-        user.team_mates = [TeamMate.from_dict(m, user.roles) for m in data.get("team_mates", [])]
-        return user
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            id=data.get("id"),
+            name=data.get("name"),
+            email=data.get("email"),
+            team_mates=[TeamMate.from_dict(d) for d in data.get("team_mates", [])],
+            roles=[Role.from_dict(d) for d in data.get("roles", [])],
+        )
 
-    def save_to_file(self, path):
+    def force_save(self, path="user_data.json"):
+        import json
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=4)
-
-    @staticmethod
-    def load_from_file(path):
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return User.from_dict(data)
-        return None
+            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
+    
+    @classmethod
+    def load(cls, path="user_data.json"):
+        if Path(path).exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    print('user_data.json correctly downloaded')
+                    print(cls.from_dict(data).name)
+                    return cls.from_dict(data)
+            except Exception as e:
+                print(f"Erreur lors du chargement du user: {e}")
+        # Fallback si fichier absent ou invalide
+        return cls(id="1", name="Admin", email="admin@example.com")
+    
+    def display(self):
+        print(f"nom:{self.name}")
+        print(f"mail: {self.email}")
+        print(f"id: {self.id}")
