@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 from model.extractor import Extractor
 import os
 
@@ -42,17 +42,71 @@ class DataManagerWindow(tk.Frame):
         super().__init__(master)
         self.controller = controller
         self.extractor = Extractor()
+        self.foreign_key_links = []  # list of {from: (...), to: (...), group: name}
+        self.group_names = {}  # root node -> group name
+
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill="both", expand=True)
 
         refresh_btn = tk.Button(self, text="🔄 Rafraîchir", command=self.refresh_columns)
         refresh_btn.pack(pady=10)
 
+        self.group_display = tk.Text(self, height=5, state="disabled")
+        self.group_display.pack(fill="x", padx=10, pady=(0, 10))
+
     def set_controller(self, controller):
         self.controller = controller
-        if not hasattr(self.controller.data_manager, "foreign_key_links"):
-            self.controller.data_manager.foreign_key_links = {}
         self.refresh_columns()
+
+    def build_fk_groups(self):
+        parent = {}
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(x, y):
+            root_x = find(x)
+            root_y = find(y)
+            if root_x != root_y:
+                parent[root_y] = root_x
+
+        nodes = set()
+        for link in self.foreign_key_links:
+            nodes.add(link["from"])
+            nodes.add(link["to"])
+
+        for node in nodes:
+            parent[node] = node
+
+        for link in self.foreign_key_links:
+            union(link["from"], link["to"])
+
+        groups = {}
+        for node in nodes:
+            root = find(node)
+            groups.setdefault(root, []).append(node)
+
+        return groups
+
+    def update_fk_group_display(self):
+        self.group_display.configure(state="normal")
+        self.group_display.delete("1.0", tk.END)
+
+        groups = self.build_fk_groups()
+        if not groups:
+            self.group_display.insert(tk.END, "Aucune relation FK définie.")
+        else:
+            for root, items in groups.items():
+                name = self.group_names.get(root, "Sans nom")
+                self.group_display.insert(tk.END, f"Groupe '{name}' :\n")
+                for item in items:
+                    self.group_display.insert(tk.END, f"  - {item}\n")
+                self.group_display.insert(tk.END, "\n")
+
+        self.group_display.configure(state="disabled")
 
     def refresh_columns(self):
         for widget in self.main_frame.winfo_children():
@@ -96,13 +150,37 @@ class DataManagerWindow(tk.Frame):
 
             def confirm_link():
                 if type_var.get() == "FK" and sheet_var.get() and column_var.get():
-                    source = f"{path} | {sheet} | {col}"
-                    target = f"{sheet_var.get()} | {column_var.get()}"
-                    links = self.controller.data_manager.foreign_key_links
-                    links.setdefault(source, []).append(target)
-                    links.setdefault(target, []).append(source)
-                    print(f"Lien FK entre {source} et {target}")
-                    self.refresh_columns()
+                    source = (path, sheet, col)
+                    try:
+                        target_sheet = eval(sheet_var.get())
+                    except:
+                        print("Erreur d'analyse de la feuille cible")
+                        return
+                    target = (*target_sheet, column_var.get())
+
+                    already_exists = any(
+                        (link["from"], link["to"]) == (source, target) or (link["from"], link["to"]) == (target, source)
+                        for link in self.foreign_key_links
+                    )
+
+                    if not already_exists:
+                        self.foreign_key_links.append({"from": source, "to": target})
+                        self.foreign_key_links.append({"from": target, "to": source})
+
+                        groups = self.build_fk_groups()
+                        root = None
+                        for r, nodes in groups.items():
+                            if source in nodes or target in nodes:
+                                root = r
+                                break
+
+                        if root and root not in self.group_names:
+                            name = simpledialog.askstring("Nom du groupe", f"Nom pour le groupe contenant {source} et {target} :")
+                            if name:
+                                self.group_names[root] = name
+
+                        print(f"Lien FK entre {source} et {target}")
+                        self.refresh_columns()
 
             link_btn = tk.Button(row, text="Lier", command=confirm_link)
             link_btn.grid(row=0, column=4, padx=5)
@@ -147,3 +225,5 @@ class DataManagerWindow(tk.Frame):
                 return update_options
 
             sheet_var.trace_add("write", make_update_options(sheet_var, column_var, column_menu))
+
+        self.update_fk_group_display()
