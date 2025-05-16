@@ -1,3 +1,4 @@
+
 import tkinter as tk
 from tkinter import ttk, simpledialog
 from model.extractor import Extractor
@@ -42,17 +43,23 @@ class DataManagerWindow(tk.Frame):
         super().__init__(master)
         self.controller = controller
         self.extractor = Extractor()
-        self.foreign_key_links = []  # list of {from: (...), to: (...), group: name}
-        self.group_names = {}  # root node -> group name
+        self.foreign_key_links = []
+        self.group_names = {}
 
-        self.main_frame = tk.Frame(self)
-        self.main_frame.pack(fill="both", expand=True)
+        layout = tk.PanedWindow(self, orient="horizontal", sashrelief="raised", sashwidth=5)
+        layout.pack(fill="both", expand=True)
 
-        refresh_btn = tk.Button(self, text="🔄 Rafraîchir", command=self.refresh_columns)
-        refresh_btn.pack(pady=10)
+        self.main_frame = tk.Frame(layout)
+        layout.add(self.main_frame, stretch="always")
 
-        self.group_display = tk.Text(self, height=5, state="disabled")
-        self.group_display.pack(fill="x", padx=10, pady=(0, 10))
+        self.sidebar_frame = tk.Frame(layout, width=250)
+        layout.add(self.sidebar_frame)
+
+        refresh_btn = tk.Button(self.sidebar_frame, text="🔄 Rafraîchir", command=self.refresh_columns)
+        refresh_btn.pack(pady=10, padx=10, anchor="n")
+
+        self.group_display = tk.Text(self.sidebar_frame, height=30, state="disabled", wrap="none")
+        self.group_display.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
     def set_controller(self, controller):
         self.controller = controller
@@ -60,7 +67,6 @@ class DataManagerWindow(tk.Frame):
 
     def build_fk_groups(self):
         parent = {}
-
         def find(x):
             while parent[x] != x:
                 parent[x] = parent[parent[x]]
@@ -77,10 +83,8 @@ class DataManagerWindow(tk.Frame):
         for link in self.foreign_key_links:
             nodes.add(link["from"])
             nodes.add(link["to"])
-
         for node in nodes:
             parent[node] = node
-
         for link in self.foreign_key_links:
             union(link["from"], link["to"])
 
@@ -88,7 +92,6 @@ class DataManagerWindow(tk.Frame):
         for node in nodes:
             root = find(node)
             groups.setdefault(root, []).append(node)
-
         return groups
 
     def update_fk_group_display(self):
@@ -102,16 +105,14 @@ class DataManagerWindow(tk.Frame):
             for root, items in groups.items():
                 name = self.group_names.get(root, "Sans nom")
                 self.group_display.insert(tk.END, f"Groupe '{name}' :\n")
-                for item in items:
-                    self.group_display.insert(tk.END, f"  - {item}\n")
+                for path, sheet, col in items:
+                    self.group_display.insert(tk.END, f"  - {os.path.basename(path)} | {sheet} | {col}\n")
                 self.group_display.insert(tk.END, "\n")
-
         self.group_display.configure(state="disabled")
 
     def refresh_columns(self):
         for widget in self.main_frame.winfo_children():
             widget.destroy()
-
         if not self.controller or not hasattr(self.controller, 'data_manager'):
             print("Controller or data_manager missing")
             return
@@ -132,7 +133,6 @@ class DataManagerWindow(tk.Frame):
         def build_row(frame, path, sheet, col):
             row = tk.Frame(frame)
             row.pack(fill="x", padx=5, pady=2)
-
             tk.Label(row, text=col, width=30, anchor="w").grid(row=0, column=0)
 
             type_var = tk.StringVar()
@@ -144,7 +144,6 @@ class DataManagerWindow(tk.Frame):
 
             sheet_menu = ttk.Combobox(row, textvariable=sheet_var, state="disabled", width=30)
             column_menu = ttk.Combobox(row, textvariable=column_var, state="disabled", width=30)
-
             sheet_menu.grid(row=0, column=2, padx=5)
             column_menu.grid(row=0, column=3, padx=5)
 
@@ -157,13 +156,7 @@ class DataManagerWindow(tk.Frame):
                         print("Erreur d'analyse de la feuille cible")
                         return
                     target = (*target_sheet, column_var.get())
-
-                    already_exists = any(
-                        (link["from"], link["to"]) == (source, target) or (link["from"], link["to"]) == (target, source)
-                        for link in self.foreign_key_links
-                    )
-
-                    if not already_exists:
+                    if not any((link["from"], link["to"]) == (source, target) or (link["from"], link["to"]) == (target, source) for link in self.foreign_key_links):
                         self.foreign_key_links.append({"from": source, "to": target})
                         self.foreign_key_links.append({"from": target, "to": source})
 
@@ -173,18 +166,15 @@ class DataManagerWindow(tk.Frame):
                             if source in nodes or target in nodes:
                                 root = r
                                 break
-
                         if root and root not in self.group_names:
-                            name = simpledialog.askstring("Nom du groupe", f"Nom pour le groupe contenant {source} et {target} :")
+                            name = simpledialog.askstring("Nom du groupe", f"Nom pour le groupe contenant {os.path.basename(path)} | {sheet} | {col} :")
                             if name:
                                 self.group_names[root] = name
-
-                        print(f"Lien FK entre {source} et {target}")
+                        print(f"Lien FK entre {os.path.basename(path)} | {sheet} | {col} et {sheet_var.get()} | {column_var.get()}")
                         self.refresh_columns()
 
             link_btn = tk.Button(row, text="Lier", command=confirm_link)
             link_btn.grid(row=0, column=4, padx=5)
-
             fk_vars.append((sheet_var, column_var, sheet_menu, column_menu, (path, sheet)))
 
             def type_changed(*args):
@@ -203,20 +193,25 @@ class DataManagerWindow(tk.Frame):
             section = CollapsibleFrame(self.main_frame, text=f"{sheet} ({os.path.basename(path)})")
             section.pack(fill="x", padx=10, pady=5, expand=True)
             frame = section.get_frame()
-
             for col in cols:
                 build_row(frame, path, sheet, col)
 
         sheet_keys = list(grouped_by_sheet.keys())
         for sheet_var, column_var, sheet_menu, column_menu, origin in fk_vars:
-            other_sheets = [str(k) for k in sheet_keys if k != origin]
-            sheet_menu["values"] = other_sheets
+            menu_values = [f"('{os.path.basename(p)}', '{s}')" for (p, s) in sheet_keys if (p, s) != origin]
+            sheet_menu["values"] = menu_values
 
             def make_update_options(sv, cv, cm):
                 def update_options(*_):
                     try:
-                        selected_sheet = eval(sv.get())
-                        options = grouped_by_sheet.get(selected_sheet, [])
+                        eval_target = eval(sv.get())
+                        for full_key in sheet_keys:
+                            if (os.path.basename(full_key[0]), full_key[1]) == eval_target:
+                                selected_key = full_key
+                                break
+                        else:
+                            selected_key = None
+                        options = grouped_by_sheet.get(selected_key, []) if selected_key else []
                     except:
                         options = []
                     cm["values"] = options
@@ -227,3 +222,5 @@ class DataManagerWindow(tk.Frame):
             sheet_var.trace_add("write", make_update_options(sheet_var, column_var, column_menu))
 
         self.update_fk_group_display()
+        self.controller.data_manager.foreign_key_links = self.foreign_key_links
+        self.controller.data_manager.fk_group_names = self.group_names
