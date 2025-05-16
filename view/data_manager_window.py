@@ -42,8 +42,6 @@ class DataManagerWindow(tk.Frame):
         super().__init__(master)
         self.controller = controller
         self.extractor = Extractor()
-        self.foreign_key_links = {}
-
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill="both", expand=True)
 
@@ -52,6 +50,8 @@ class DataManagerWindow(tk.Frame):
 
     def set_controller(self, controller):
         self.controller = controller
+        if not hasattr(self.controller.data_manager, "foreign_key_links"):
+            self.controller.data_manager.foreign_key_links = {}
         self.refresh_columns()
 
     def refresh_columns(self):
@@ -73,31 +73,69 @@ class DataManagerWindow(tk.Frame):
             tk.Label(self.main_frame, text="Aucune colonne sélectionnée.", font=("Arial", 12)).pack(pady=10)
             return
 
+        fk_vars = []
+
+        def build_row(frame, path, sheet, col):
+            row = tk.Frame(frame)
+            row.pack(fill="x", padx=5, pady=2)
+
+            tk.Label(row, text=col, width=30, anchor="w").grid(row=0, column=0)
+
+            type_var = tk.StringVar()
+            type_menu = ttk.Combobox(row, textvariable=type_var, values=["", "ZIP", "FK", "ROLE", "COUNT", "SUM", "GROUPBY"], state="readonly", width=10)
+            type_menu.grid(row=0, column=1)
+
+            sheet_var = tk.StringVar()
+            column_var = tk.StringVar()
+
+            sheet_menu = ttk.Combobox(row, textvariable=sheet_var, state="disabled", width=30)
+            column_menu = ttk.Combobox(row, textvariable=column_var, state="disabled", width=30)
+
+            sheet_menu.grid(row=0, column=2, padx=5)
+            column_menu.grid(row=0, column=3, padx=5)
+
+            def confirm_link():
+                if type_var.get() == "FK" and sheet_var.get() and column_var.get():
+                    source = f"{path} | {sheet} | {col}"
+                    target = f"{sheet_var.get()} | {column_var.get()}"
+                    links = self.controller.data_manager.foreign_key_links
+                    links.setdefault(source, []).append(target)
+                    links.setdefault(target, []).append(source)
+                    print(f"Lien FK entre {source} et {target}")
+                    self.refresh_columns()
+
+            link_btn = tk.Button(row, text="Lier", command=confirm_link)
+            link_btn.grid(row=0, column=4, padx=5)
+
+            fk_vars.append((sheet_var, column_var, sheet_menu, column_menu, (path, sheet)))
+
+            def type_changed(*args):
+                if type_var.get() == "FK":
+                    sheet_menu["state"] = "readonly"
+                    column_menu["state"] = "readonly"
+                else:
+                    sheet_menu["state"] = "disabled"
+                    column_menu["state"] = "disabled"
+                    sheet_var.set("")
+                    column_var.set("")
+
+            type_var.trace_add("write", type_changed)
+
         for (path, sheet), cols in grouped_by_sheet.items():
             section = CollapsibleFrame(self.main_frame, text=f"{sheet} ({os.path.basename(path)})")
             section.pack(fill="x", padx=10, pady=5, expand=True)
             frame = section.get_frame()
 
             for col in cols:
-                row = tk.Frame(frame)
-                row.pack(fill="x", padx=5, pady=2)
+                build_row(frame, path, sheet, col)
 
-                tk.Label(row, text=col, width=30, anchor="w").grid(row=0, column=0)
+        sheet_keys = list(grouped_by_sheet.keys())
+        for sheet_var, column_var, sheet_menu, column_menu, origin in fk_vars:
+            other_sheets = [str(k) for k in sheet_keys if k != origin]
+            sheet_menu["values"] = other_sheets
 
-                type_var = tk.StringVar()
-                type_menu = ttk.Combobox(row, textvariable=type_var, values=["", "ZIP", "FK", "ROLE", "COUNT", "SUM", "GROUPBY"], state="readonly", width=10)
-                type_menu.grid(row=0, column=1)
-
-                sheet_var = tk.StringVar()
-                column_var = tk.StringVar()
-
-                sheet_menu = ttk.Combobox(row, textvariable=sheet_var, state="disabled", width=30)
-                column_menu = ttk.Combobox(row, textvariable=column_var, state="disabled", width=30)
-
-                sheet_menu.grid(row=0, column=2, padx=5)
-                column_menu.grid(row=0, column=3, padx=5)
-
-                def update_options(*args, sv=sheet_var, cv=column_var, sm=sheet_menu, cm=column_menu):
+            def make_update_options(sv, cv, cm):
+                def update_options(*_):
                     try:
                         selected_sheet = eval(sv.get())
                         options = grouped_by_sheet.get(selected_sheet, [])
@@ -106,33 +144,6 @@ class DataManagerWindow(tk.Frame):
                     cm["values"] = options
                     if options:
                         cv.set(options[0])
+                return update_options
 
-                def enable_fk_options(sm=sheet_menu, cm=column_menu):
-                    sm["state"] = "readonly"
-                    cm["state"] = "readonly"
-                    sm["values"] = [str(k) for k in grouped_by_sheet.keys() if k != (path, sheet)]
-                    sheet_var.trace_add("write", update_options)
-
-                def disable_fk_options():
-                    sheet_menu["state"] = "disabled"
-                    column_menu["state"] = "disabled"
-                    sheet_var.set("")
-                    column_var.set("")
-
-                def type_changed(*args):
-                    if type_var.get() == "FK":
-                        enable_fk_options()
-                    else:
-                        disable_fk_options()
-
-                type_var.trace_add("write", type_changed)
-
-                def confirm_link():
-                    if type_var.get() == "FK" and sheet_var.get() and column_var.get():
-                        source = f"{path} | {sheet} | {col}"
-                        target = f"{sheet_var.get()} | {column_var.get()}"
-                        self.foreign_key_links.setdefault(source, []).append(target)
-                        self.foreign_key_links.setdefault(target, []).append(source)
-                        print(f"Lien FK entre {source} et {target}")
-
-                tk.Button(row, text="Lier", command=confirm_link).grid(row=0, column=4, padx=5)
+            sheet_var.trace_add("write", make_update_options(sheet_var, column_var, column_menu))
