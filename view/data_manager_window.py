@@ -1,3 +1,4 @@
+
 import tkinter as tk
 from tkinter import ttk, simpledialog
 from model.extractor import Extractor
@@ -43,6 +44,7 @@ class DataManagerWindow(tk.Frame):
         self.extractor = Extractor()
         self.foreign_key_links = []
         self.group_names = {}  # node -> group name
+        self.zip_column = None
 
         layout = tk.PanedWindow(self, orient="horizontal", sashrelief="raised", sashwidth=5, bg="#cce6ff")
         layout.pack(fill="both", expand=True)
@@ -110,6 +112,9 @@ class DataManagerWindow(tk.Frame):
                 for item in items:
                     self.group_display.insert(tk.END, f"  - {os.path.basename(item[0])} | {item[1]} | {item[2]}\n")
                 self.group_display.insert(tk.END, "\n")
+
+        if self.zip_column:
+            self.group_display.insert(tk.END, f"Colonne ZIP : {os.path.basename(self.zip_column[0])} | {self.zip_column[1]} | {self.zip_column[2]}\n")
 
         self.group_display.configure(state="disabled")
 
@@ -185,6 +190,11 @@ class DataManagerWindow(tk.Frame):
                         print(f"Lien FK entre {os.path.basename(path)} | {sheet} | {col} et {sheet_var.get()} | {column_var.get()}")
                         self.refresh_columns()
 
+                elif type_var.get() == "ZIP":
+                    self.zip_column = (path, sheet, col)
+                    print(f"Colonne ZIP définie : {self.zip_column}")
+                    self.refresh_columns()
+
             link_btn = tk.Button(row, text="Lier", command=confirm_link)
             link_btn.grid(row=0, column=4, padx=5)
 
@@ -231,3 +241,4 @@ class DataManagerWindow(tk.Frame):
         self.update_fk_group_display()
         self.controller.data_manager.foreign_key_links = self.foreign_key_links
         self.controller.data_manager.fk_group_names = self.group_names
+        self.controller.data_manager.zip_column = self.zip_column
