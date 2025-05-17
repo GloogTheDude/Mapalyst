@@ -6,14 +6,13 @@ import pandas as pd
 from model.extractor import Extractor
 from utils.ui_elem import CollapsibleFrame
 
-# Classe principale pour gérer la fenêtre de chargement des fichiers Excel
+# Dans la classe FileLoaderWindow
+
 class FileLoaderWindow(tk.Frame):
     def __init__(self, master, controller):
         super().__init__(master)
         self.controller = controller  # Le contrôleur qui gère l'application
         self.extractor = Extractor()  # Objet pour extraire les données des fichiers Excel
-        # self.file_frames = {}  # Dictionnaire pour garder une trace des fichiers chargés
-        # self.column_vars = {}  # Dictionnaire pour garder une trace des cases à cocher des colonnes
 
         # Cadre pour les boutons (Charger, Ajouter, Sauvegarder, etc.)
         button_frame = tk.Frame(self)
@@ -132,6 +131,8 @@ class FileLoaderWindow(tk.Frame):
                             self.controller.data_manager.sheet_column_metadata = {}
                         if v.get():
                             self.controller.data_manager.sheet_column_metadata[k] = {"selected": True}
+                            print(type(self.controller.data_manager))
+                            print(f"{self.controller.data_manager.sheet_column_metadata[k]}")
                             print(f"[✓] Colonne activée: {k}")
                         else:
                             self.controller.data_manager.sheet_column_metadata.pop(k, None)
@@ -148,19 +149,8 @@ class FileLoaderWindow(tk.Frame):
         filepath = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
         if not filepath:
             return
-        config = {}
-        # Sauvegarde les paramètres de chaque colonne sélectionnée dans un fichier
-        for key, var in self.self.controller.data_manager.column_vars.items():
-            path, sheet, column = key
-            checked = var.get()
-            config.setdefault(path, {}).setdefault(sheet, {})[column] = {"selected": checked}
-
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
-        print(f"Paramètres sauvegardés dans {filepath}")
-
-        if hasattr(self.controller, "go_to_next_tab"):
-            self.controller.go_to_next_tab()
+        # Appel à la méthode save_state du DataManager pour sauvegarder l'état
+        self.controller.data_manager.save_state(filepath)
 
     def load_previous_config(self):
         """ Charge une configuration précédente à partir d'un fichier JSON. """
@@ -168,14 +158,25 @@ class FileLoaderWindow(tk.Frame):
         if not filepath:
             return
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                config = json.load(f)  # Charge les métadonnées depuis le fichier JSON
-
-            for path in config:
-                loaded_file = self.extractor.create_file(path)
-                self.controller.data_manager.files.append(loaded_file)
-                self.display_file(loaded_file, config_for_file=config[path])
-
+            # 1. Charger l'état via DataManager
+            self.controller.data_manager.load_state(filepath)
             print(f"Configuration chargée depuis {filepath}")
+
+            # 2. Afficher chaque fichier rechargé
+            for loaded_file in self.controller.data_manager.files:
+                # On passe un dictionnaire par feuille contenant les colonnes sélectionnées
+                config_for_file = {}
+                for sheet in loaded_file.sheets:
+                    config_for_file[sheet.name] = {}
+
+                    for col in sheet.dataframe.columns:
+                        key = (loaded_file.path, sheet.name, col)
+                        if key in self.controller.data_manager.sheet_column_metadata:
+                            config_for_file[sheet.name][col] = self.controller.data_manager.sheet_column_metadata[key]
+
+                # 3. Appeler display_file avec la config
+                self.display_file(loaded_file, config_for_file)
+
         except Exception as e:
             print(f"Erreur lors du chargement : {e}")
+

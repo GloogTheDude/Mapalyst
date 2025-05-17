@@ -62,8 +62,9 @@ class DataManagerWindow(tk.Frame):
         # Création des noeuds à partir des liens FK
         nodes = set()
         for link in self.foreign_key_links:
-            nodes.add(link["from"])
-            nodes.add(link["to"])
+            nodes.add(tuple(link["from"]))
+            nodes.add(tuple(link["to"]))
+
 
         # Initialisation des groupes pour chaque noeud
         for node in nodes:
@@ -71,7 +72,7 @@ class DataManagerWindow(tk.Frame):
 
         # Union des noeuds selon les liens FK
         for link in self.foreign_key_links:
-            union(link["from"], link["to"])
+            union(tuple(link["from"]), tuple(link["to"]))
 
         # Création des groupes de noeuds
         groups = {}
@@ -103,25 +104,38 @@ class DataManagerWindow(tk.Frame):
         # Affichage des colonnes ZIP et Rôle, si définies
         if self.zip_column:
             self.group_display.insert(tk.END, f"Colonne ZIP : {os.path.basename(self.zip_column[0])} | {self.zip_column[1]} | {self.zip_column[2]}\n")
-        if self.role_column:
-            self.group_display.insert(tk.END, f"Colonne Rôle : {os.path.basename(self.role_column[0])} | {self.role_column[1]} | {self.role_column[2]}\n")
+        if self.role_columns:
+            self.group_display.insert(tk.END, "\nColonnes associées aux rôles :\n")
+            for role, (p, s, c) in self.role_columns.items():
+                self.group_display.insert(tk.END, f"  - {role} → {os.path.basename(p)} | {s} | {c}\n")
+
 
         self.group_display.configure(state="disabled")
 
     def refresh_columns(self):
         """ Rafraîchit les colonnes et leur affichage dans la fenêtre. """
+        print(f"self.controller.data_manager.data_links is {str(self.controller.data_manager.data_links)}")
+
+        # Synchronise les données depuis le DataManager
+        self.foreign_key_links = getattr(self.controller.data_manager, "data_links", [])
+        self.zip_column = getattr(self.controller.data_manager, "zip_column", None)
+        if self.zip_column:
+            self.zip_column = tuple(self.zip_column)
+        self.role_columns = getattr(self.controller.data_manager, "role_columns", {})
+        self.group_names = getattr(self.controller.data_manager, "group_names", {})
+
+        # Réinitialise l'affichage principal
         for widget in self.main_frame.winfo_children():
-            widget.destroy()  # Supprime tous les éléments existants dans `main_frame`
+            widget.destroy()
 
         if not self.controller or not hasattr(self.controller, 'data_manager'):
-            print("Controller or data_manager missing")  # Vérifie la présence du contrôleur et du data_manager
+            print("Controller or data_manager missing")
             return
 
-        # Récupère les métadonnées des colonnes sélectionnées
+        # Récupère les métadonnées de colonnes sélectionnées
         metadata = getattr(self.controller.data_manager, "sheet_column_metadata", {})
         grouped_by_sheet = {}
 
-        # Groupe les colonnes sélectionnées par feuille
         for key, info in metadata.items():
             if isinstance(info, dict) and info.get("selected"):
                 path, sheet, col = key
@@ -131,7 +145,6 @@ class DataManagerWindow(tk.Frame):
             tk.Label(self.main_frame, text="Aucune colonne sélectionnée.", font=("Arial", 12)).pack(pady=10)
             return
 
-        # Crée des sections pour chaque groupe de colonnes
         self.sheet_keys = list(grouped_by_sheet.keys())
         self.fk_vars = []
 
@@ -141,9 +154,10 @@ class DataManagerWindow(tk.Frame):
             frame = section.get_frame()
 
             for col in cols:
-                self._build_row(frame, path, sheet, col, grouped_by_sheet)  # Crée une ligne pour chaque colonne
+                self._build_row(frame, path, sheet, col, grouped_by_sheet)
 
-        self.update_fk_group_display()  # Met à jour l'affichage des groupes FK
+        self.update_fk_group_display()
+
 
     def _build_row(self, frame, path, sheet, col, grouped_by_sheet):
         """ Crée une ligne avec des menus déroulants pour chaque colonne. """
@@ -171,14 +185,22 @@ class DataManagerWindow(tk.Frame):
         menu2.grid(row=0, column=3, padx=5)
 
         def confirm_link():
-            """ Confirme le lien FK ou la sélection de colonne. """
-            if type_var.get() == "FK" and sheet_var.get() and column_var.get():
-                source = (path, sheet, col)
+            """ Confirme l'action choisie pour la colonne : FK, ZIP ou ROLE. """
+            selected_type = type_var.get()
+            source = (path, sheet, col)
+
+            if selected_type == "FK":
+                # Vérifie que des valeurs sont sélectionnées
+                if not sheet_var.get() or not column_var.get():
+                    print("Veuillez sélectionner une feuille et une colonne cibles.")
+                    return
+
                 try:
                     target_sheet = eval(sheet_var.get())
-                except:
-                    print("Erreur d'analyse de la feuille cible")
+                except Exception:
+                    print("Erreur d'analyse de la feuille cible.")
                     return
+
                 target = (*target_sheet, column_var.get())
 
                 # Vérifie si le lien FK existe déjà
@@ -188,13 +210,21 @@ class DataManagerWindow(tk.Frame):
                 )
 
                 if not already_exists:
+                    # Ajoute le lien dans les deux sens
                     self.foreign_key_links.append({"from": source, "to": target})
                     self.foreign_key_links.append({"from": target, "to": source})
 
-                    # Demande à l'utilisateur un nom pour le groupe
+                    # Sauvegarde dans DataManager
+                    self.controller.data_manager.data_links = self.foreign_key_links
+                    print(f"self.controller.data_manager.data_links is now: {str(self.controller.data_manager.data_links)}")
+
+                    # Gestion du nom du groupe FK
                     known_name = next((self.group_names.get(n) for n in [source, target] if n in self.group_names), None)
                     if not known_name:
-                        name = simpledialog.askstring("Nom du groupe", f"Nom pour le groupe contenant {source} et {target} :")
+                        name = simpledialog.askstring(
+                            "Nom du groupe",
+                            f"Nom pour le groupe contenant :\n - {os.path.basename(source[0])} | {source[1]} | {source[2]}\n - {os.path.basename(target[0])} | {target[1]} | {target[2]}"
+                        )
                         if name:
                             self.group_names[source] = name
                             self.group_names[target] = name
@@ -202,16 +232,31 @@ class DataManagerWindow(tk.Frame):
                         self.group_names[source] = known_name
                         self.group_names[target] = known_name
 
-                print(f"Lien FK entre {source} et {target}")
+                    print(f"[✓] Lien FK ajouté entre {source} et {target}")
+                else:
+                    print("[i] Le lien FK existe déjà.")
+
                 self.refresh_columns()
 
-            elif type_var.get() == "ZIP":
-                self.zip_column = (path, sheet, col)
+            elif selected_type == "ZIP":
+                self.zip_column = source
+                self.controller.data_manager.zip_column = source
+                print(f"[✓] Colonne ZIP définie : {source}")
                 self.refresh_columns()
 
-            elif type_var.get() == "ROLE":
-                self.role_column = (path, sheet, col)
+            elif selected_type == "ROLE":
+                role_name = sheet_var.get()
+                if not role_name:
+                    print("Aucun rôle sélectionné.")
+                    return
+
+                self.role_column = source  # Optionnel si tu veux garder le dernier
+                self.controller.data_manager.role_columns[role_name] = source
+
+                print(f"[✓] Rôle '{role_name}' associé à : {source}")
                 self.refresh_columns()
+
+
 
         link_btn = tk.Button(row, text="Lier", command=confirm_link)
         link_btn.grid(row=0, column=4, padx=5)

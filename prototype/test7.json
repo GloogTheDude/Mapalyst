@@ -1,0 +1,82 @@
+{
+  "files": [
+    {
+      "path": "D:/WORKSPACE/Mapalyst/Mapalyst/prototype/rapport.xlsx",
+      "sheets": [
+        {
+          "name": "Agenten-Agences",
+          "dataframe_columns": [
+            "POS",
+            "POS Name",
+            "POS Street",
+            "POS ZIP",
+            "POS City",
+            "POS Province",
+            "POS Phone",
+            "POS FAX",
+            "POS Email",
+            "Sector",
+            "RM/MS",
+            "Invest",
+            "Pme",
+            "Agri",
+            "Inspecteurs",
+            "Safes",
+            "C & M",
+            "Contract Holder Name",
+            "Legal",
+            "Holder Start dat",
+            "Holder Street",
+            "Holder ZIP",
+            "Holder City",
+            "Fsma Number",
+            "Company Idn",
+            "Exclusive Credit",
+            "Exclusive Insurance",
+            "Reputation Risk",
+            "code referentiekantoor",
+            "agri business bankers",
+            "kmoz business bankers"
+          ],
+          "column_flags": {}
+        },
+        {
+          "name": "Openingsuren",
+          "dataframe_columns": [
+            "POS",
+            "POS Name",
+            "Day of week",
+            "Time Open AM",
+            "Time Close AM",
+            "Time Open PM",
+            "Time Close PM",
+            "Time Open Evening",
+            "Time Close Evening",
+            "Appointment Open Am",
+            "Appointment Close Am",
+            "Appointment Open Pm",
+            "Appointment Close Pm",
+            "Appointment Open Evening",
+            "Appointment Close Evening"
+          ],
+          "column_flags": {}
+        }
+      ]
+    }
+  ],
+  "sheet_column_metadata": {
+    "('D:/WORKSPACE/Mapalyst/Mapalyst/prototype/rapport.xlsx', 'Agenten-Agences', 'POS')": {
+      "selected": true
+    },
+    "('D:/WORKSPACE/Mapalyst/Mapalyst/prototype/rapport.xlsx', 'Agenten-Agences', 'POS Name')": {
+      "selected": true
+    },
+    "('D:/WORKSPACE/Mapalyst/Mapalyst/prototype/rapport.xlsx', 'Agenten-Agences', 'POS Street')": {
+      "selected": true
+    },
+    "('D:/WORKSPACE/Mapalyst/Mapalyst/prototype/rapport.xlsx', 'Agenten-Agences', 'POS ZIP')": {
+      "selected": true
+    }
+  },
+  "data_links": []
+}
