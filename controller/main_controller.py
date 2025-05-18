@@ -8,7 +8,8 @@ from model.data_manager import DataManager
 class MainController:
     def __init__(self, user=None, data_manager=None, main_window=None):
         self.user = user or self.load_user()
-        self.data_manager = data_manager or DataManager()
+        if data_manager: self.data_manager = data_manager
+        else: self.data_manager = DataManager()
         self.main_window = main_window
 
     def set_main_window(self, main_window):

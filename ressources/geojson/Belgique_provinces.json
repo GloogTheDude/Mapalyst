@@ -12177,7 +12177,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion wallonne"
-                ]
+                ],
+                "NAME_2": "Liège"
             }
         },
         {
@@ -23152,7 +23153,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion flamande"
-                ]
+                ],
+                "NAME_2": "VlaamsBrabant"
             }
         },
         {
@@ -31015,7 +31017,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion flamande"
-                ]
+                ],
+                "NAME_2": "Limburg"
             }
         },
         {
@@ -37736,7 +37739,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion flamande"
-                ]
+                ],
+                "NAME_2": "West-Vlaanderen"
             }
         },
         {
@@ -53523,7 +53527,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion wallonne"
-                ]
+                ],
+                "NAME_2": "Hainaut"
             }
         },
         {
@@ -60436,7 +60441,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion flamande"
-                ]
+                ],
+                "NAME_2": "Antwerpen"
             }
         },
         {
@@ -72821,7 +72827,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion wallonne"
-                ]
+                ],
+                "NAME_2": "Luxembourg"
             }
         },
         {
@@ -84866,7 +84873,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion wallonne"
-                ]
+                ],
+                "NAME_2": "Namur"
             }
         },
         {
@@ -92607,7 +92615,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion flamande"
-                ]
+                ],
+                "NAME_2": "Oost-Vlaanderen"
             }
         },
         {
@@ -98656,7 +98665,8 @@
                 ],
                 "reg_name_fr": [
                     "R\u00e9gion wallonne"
-                ]
+                ],
+                "NAME_2": "BrabantWallon"
             }
         }
     ]
