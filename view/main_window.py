@@ -23,7 +23,7 @@ class MainWindow(tk.Tk):
         self.data_manager = DataManagerWindow(self.notebook, controller)
         self.notebook.add(self.data_manager, text="Données")
 
-        self.map_drawer = MapDrawer(self.notebook, controller)
+        self.map_drawer = MapDrawer(self.notebook)
         self.notebook.add(self.map_drawer, text="Carte")
 
     def set_controller(self, controller):
@@ -31,4 +31,5 @@ class MainWindow(tk.Tk):
         self.user_window.set_controller(controller)
         self.file_loader_window.set_controller(controller)
         self.data_manager.set_controller(controller)
+        self.map_drawer.set_controller(controller)  
 
